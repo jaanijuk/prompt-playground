@@ -1,0 +1,535 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IAB Australia · Claude Prompt Playground</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'Segoe UI', Arial, sans-serif;
+    background: #f0f4f8;
+    min-height: 100vh;
+    color: #1a1a2e;
+  }
+
+  /* ── Header ── */
+  .header {
+    background: linear-gradient(135deg, #1B2A4A 0%, #2a3f6f 100%);
+    padding: 36px 40px 32px;
+    color: white;
+  }
+  .header-inner { max-width: 1000px; margin: 0 auto; }
+  .header-eyebrow {
+    font-size: 11px; font-weight: 700; letter-spacing: 2px;
+    text-transform: uppercase; color: #7dd3d0; margin-bottom: 10px;
+  }
+  .header h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.5px; margin-bottom: 6px; }
+  .header p { color: #a8c5c3; font-size: 14px; }
+  .header-meta {
+    display: flex; gap: 20px; margin-top: 18px; flex-wrap: wrap;
+  }
+  .header-stat {
+    background: rgba(255,255,255,0.08); border-radius: 8px;
+    padding: 8px 16px; font-size: 13px; color: #d4e9e8;
+  }
+  .header-stat strong { color: white; font-size: 18px; display: block; }
+
+  /* ── Main ── */
+  .main { max-width: 1000px; margin: 0 auto; padding: 28px 24px 60px; }
+
+  /* ── Controls ── */
+  .controls { background: white; border-radius: 14px; padding: 20px 22px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+
+  .role-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .pill {
+    padding: 7px 14px; border-radius: 20px; border: none; cursor: pointer;
+    font-size: 13px; font-weight: 500; background: #f1f5f9; color: #475569;
+    transition: all 0.15s; white-space: nowrap;
+  }
+  .pill:hover { opacity: 0.85; }
+  .pill.active { color: white; font-weight: 700; }
+  .pill .count { opacity: 0.7; font-size: 11px; }
+
+  .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .search-box {
+    flex: 1 1 200px; min-width: 160px; padding: 8px 14px;
+    border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px;
+    outline: none; font-family: inherit; color: #374151;
+    transition: border-color 0.15s;
+  }
+  .search-box:focus { border-color: #00857C; }
+
+  .filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
+  .filter-btn {
+    padding: 6px 12px; border-radius: 16px; font-size: 12px; cursor: pointer;
+    border: 1.5px solid #e2e8f0; background: white; color: #6b7280;
+    font-family: inherit; transition: all 0.15s;
+  }
+  .filter-btn:hover { border-color: #94a3b8; }
+  .filter-btn.active-cat { border-color: #00857C; background: #e8f4f3; color: #00857C; font-weight: 600; }
+  .filter-btn.active-diff { border-color: #1B2A4A; background: #e8edf5; color: #1B2A4A; font-weight: 600; }
+
+  .results-count { font-size: 13px; color: #9ca3af; margin-bottom: 14px; }
+
+  /* ── Cards ── */
+  .cards { display: flex; flex-direction: column; gap: 12px; }
+
+  .card {
+    background: white; border-radius: 12px;
+    border: 2px solid transparent;
+    box-shadow: 0 1px 4px rgba(0,0,0,0.07);
+    overflow: hidden; transition: all 0.2s;
+  }
+  .card.open { box-shadow: 0 4px 20px rgba(0,0,0,0.1); }
+
+  .card-header {
+    display: flex; align-items: center; gap: 12px;
+    padding: 15px 18px; cursor: pointer; user-select: none;
+  }
+  .card-accent { width: 4px; height: 40px; border-radius: 2px; flex-shrink: 0; }
+  .card-meta { flex: 1; min-width: 0; }
+  .card-title-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+  .card-title { font-weight: 700; font-size: 15px; color: #111827; }
+  .tag {
+    font-size: 11px; padding: 2px 8px; border-radius: 10px;
+    background: #f3f4f6; color: #6b7280; font-weight: 500;
+  }
+  .diff-tag { font-size: 11px; padding: 2px 8px; border-radius: 10px; font-weight: 600; }
+  .diff-Beginner { background: #f0fdf4; color: #16a34a; }
+  .diff-Intermediate { background: #fffbeb; color: #d97706; }
+  .diff-Advanced { background: #fef2f2; color: #dc2626; }
+  .card-role { font-size: 12px; font-weight: 600; margin-top: 3px; }
+  .card-chevron { font-size: 13px; color: #9ca3af; flex-shrink: 0; transition: transform 0.2s; }
+  .card.open .card-chevron { transform: rotate(180deg); }
+
+  .card-body { padding: 0 18px 18px; display: none; }
+  .card.open .card-body { display: block; }
+
+  .prompt-box {
+    background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 8px;
+    padding: 16px; font-family: 'Courier New', monospace; font-size: 13px;
+    line-height: 1.65; color: #374151; white-space: pre-wrap;
+    word-break: break-word;
+  }
+
+  .tip-box {
+    display: flex; gap: 10px; align-items: flex-start;
+    background: #fffbeb; border: 1px solid #fde68a; border-radius: 8px;
+    padding: 10px 14px; margin-top: 12px;
+  }
+  .tip-icon { font-size: 15px; flex-shrink: 0; }
+  .tip-text { font-size: 13px; color: #92400e; line-height: 1.5; }
+  .tip-text strong { font-weight: 700; }
+
+  .card-actions { display: flex; gap: 8px; margin-top: 14px; flex-wrap: wrap; }
+  .btn-copy {
+    padding: 8px 18px; border-radius: 8px; border: none; cursor: pointer;
+    color: white; font-weight: 600; font-size: 13px;
+    transition: opacity 0.15s; font-family: inherit;
+  }
+  .btn-copy:hover { opacity: 0.85; }
+  .btn-open {
+    padding: 8px 18px; border-radius: 8px; font-weight: 600; font-size: 13px;
+    background: white; text-decoration: none; display: inline-flex; align-items: center;
+    transition: background 0.15s;
+  }
+  .btn-open:hover { background: #f8fafc; }
+
+  /* ── Empty state ── */
+  .empty { text-align: center; padding: 60px 0; color: #9ca3af; }
+  .empty-icon { font-size: 40px; margin-bottom: 12px; }
+  .empty h3 { font-size: 16px; font-weight: 600; color: #6b7280; margin-bottom: 4px; }
+  .empty p { font-size: 13px; }
+
+  /* ── Footer ── */
+  .footer {
+    text-align: center; padding: 24px; font-size: 12px; color: #9ca3af;
+    border-top: 1px solid #e5e7eb; margin-top: 20px;
+  }
+
+  @media (max-width: 600px) {
+    .header { padding: 24px 20px; }
+    .main { padding: 20px 16px 40px; }
+    .controls { padding: 16px; }
+    .header h1 { font-size: 22px; }
+  }
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-eyebrow">IAB Australia · Claude Team Account</div>
+    <h1>⚡ Prompt Playground ⚡(a joint JJ & Claude production 🤓)</h1>
+    <p>Some suggested ready-to-use prompts for every role. Just copy, customise, and paste into Claude!</p>
+    <div class="header-meta">
+      <div class="header-stat"><strong>42</strong> Prompts</div>
+      <div class="header-stat"><strong>7</strong> Roles</div>
+      <div class="header-stat"><strong>6</strong> Categories</div>
+    </div>
+  </div>
+</div>
+
+<!-- Main -->
+<div class="main">
+  <div class="controls">
+    <div class="role-pills" id="rolePills"></div>
+    <div class="filter-row">
+      <input class="search-box" id="searchBox" type="text" placeholder="🔍  Search prompts..." oninput="render()">
+      <div class="filter-group" id="catFilters"></div>
+      <div class="filter-group" id="diffFilters"></div>
+    </div>
+  </div>
+
+  <div class="results-count" id="resultsCount"></div>
+  <div class="cards" id="cards"></div>
+  <div class="empty" id="empty" style="display:none">
+    <div class="empty-icon">🔍</div>
+    <h3>No prompts found</h3>
+    <p>Try a different filter or search term</p>
+  </div>
+</div>
+
+<div class="footer">IAB Australia · Claude Team Onboarding · iabaustralia.com.au</div>
+
+<script>
+const ROLES = [
+  { id:"all",        label:"⚡ All Roles",              color:"#1B2A4A" },
+  { id:"admin",      label:"🗂️ Office Admin",            color:"#2E6DA4" },
+  { id:"marketing",  label:"📣 Marketing",               color:"#00857C" },
+  { id:"membership", label:"🤝 Membership",              color:"#8B5CF6" },
+  { id:"ceo",        label:"👔 CEO",                     color:"#B45309" },
+  { id:"finance",    label:"💰 Finance",                 color:"#1D7A3A" },
+  { id:"designer",   label:"🎨 Designer",                color:"#C2410C" },
+  { id:"consultant", label:"📡 Tech Consultant",         color:"#0E7490" },
+];
+
+const CATEGORIES = ["All","Drafting","Research","Analysis","Strategy","Content","Planning"];
+const DIFFICULTIES = ["All","Beginner","Intermediate","Advanced"];
+
+const PROMPTS = [
+  // ── OFFICE ADMIN ──────────────────────────────────────────────
+  { role:"admin", title:"Meeting Agenda", category:"Planning", difficulty:"Beginner",
+    prompt:`Draft a meeting agenda for our monthly IAB Australia all-staff meeting covering:\n• Q2 membership update\n• Upcoming Summit logistics\n• Finance review\n• Team announcements\n\nKeep it to one page. Include time allocations for each item and a space for AOB.`,
+    tip:"Add specific names as agenda owners to make it even more useful." },
+
+  { role:"admin", title:"Summarise Meeting Notes", category:"Analysis", difficulty:"Beginner",
+    prompt:`Summarise the key outcomes and action items from the following meeting notes. Format your response as:\n1. A 3-sentence summary of what was discussed\n2. A table with columns: Action Item | Owner | Due Date\n3. Any open questions that need a decision\n\n[Paste your meeting notes here]`,
+    tip:"Works brilliantly with messy, rough notes — no need to tidy them up first." },
+
+  { role:"admin", title:"Supplier Chase Email", category:"Drafting", difficulty:"Beginner",
+    prompt:`Write a polite but firm follow-up email to a venue supplier. We requested a quote 7 business days ago for our annual Summit event (approx. 400 attendees, full-day conference format) and haven't heard back. We have a decision deadline of end of this week.\n\nTone: professional, warm but with a sense of urgency. Keep it under 150 words.`,
+    tip:"Try adding 'Add a P.S. offering a quick 10-min call if that helps' for a warmer touch." },
+
+  { role:"admin", title:"New Starter Checklist", category:"Planning", difficulty:"Beginner",
+    prompt:`Create a comprehensive onboarding checklist for a new team member joining IAB Australia in a marketing role. Include:\n• Pre-start tasks (IT setup, accounts, access)\n• Week 1 priorities\n• First 30 days milestones\n• Key contacts to meet\n• Tools and systems to get familiar with (we use Slack, Microsoft 365, Teams, Google Drive, Adobe, Attio CRM)\n\nFormat as a checklist with checkboxes.`,
+    tip:"Swap 'marketing role' for any other role and it adapts instantly." },
+
+  { role:"admin", title:"Process to SOP", category:"Drafting", difficulty:"Intermediate",
+    prompt:`I'm going to describe a process we follow. Please turn it into a clear, professional Standard Operating Procedure (SOP) document with:\n• Purpose\n• Scope\n• Step-by-step instructions (numbered)\n• Any tips or warnings\n• Version and date at the bottom\n\nHere's the process: [Describe the process in plain language — as rough as you like]`,
+    tip:"Speak it as if explaining to a new colleague. Claude will structure it professionally." },
+
+  { role:"admin", title:"Tricky Email Reply", category:"Drafting", difficulty:"Intermediate",
+    prompt:`Help me write a diplomatic reply to the following email. The sender is unhappy about [briefly describe the issue]. I want to:\n• Acknowledge their concern without admitting fault\n• Explain our position clearly\n• Offer a constructive next step\n• Keep the relationship positive\n\nHere's the email I received: [Paste email here]`,
+    tip:"Ask Claude to give you 2–3 tone options (e.g. 'firm', 'conciliatory', 'neutral') to choose from." },
+
+  // ── MARKETING ─────────────────────────────────────────────────
+  { role:"marketing", title:"LinkedIn Post", category:"Content", difficulty:"Beginner",
+    prompt:`Write a LinkedIn post for IAB Australia announcing our upcoming annual Summit. The event brings together Australia's top marketing, media, and technology leaders for a full day of keynotes and workshops.\n\nTone: professional but energetic. Include:\n• A strong opening hook\n• What attendees will get out of it\n• A clear call to action\n• 3 relevant hashtags\n\nMax 200 words.`,
+    tip:"Ask for '3 versions with different opening hooks' to find the one that lands best." },
+
+  { role:"marketing", title:"Content Repurposing", category:"Content", difficulty:"Beginner",
+    prompt:`I have a report/article/speech below. Please repurpose it into 5 different content formats:\n1. A 250-word blog post intro\n2. Three LinkedIn posts (one insight per post)\n3. A 100-word newsletter blurb\n4. Five pull-quote social tiles (one punchy sentence each)\n5. A 60-second script for a short video or podcast intro\n\n[Paste your source content here]`,
+    tip:"One piece of content → a whole week of assets. A Summit keynote speech is perfect for this." },
+
+  { role:"marketing", title:"Email Nurture Sequence", category:"Planning", difficulty:"Intermediate",
+    prompt:`Create a 5-email nurture sequence for prospective IAB Australia members who downloaded our Digital Advertising Standards report. Each email should:\n• Be under 200 words\n• Have a clear subject line\n• Focus on a different benefit of membership\n• End with a soft CTA (not a hard sell)\n• Be spaced 4–5 days apart\n\nMembership benefits include: industry connections, research access, standards input, training, and advocacy representation.`,
+    tip:"Then ask: 'Now write subject line A/B test variants for each email.'" },
+
+  { role:"marketing", title:"Industry Editorial", category:"Content", difficulty:"Intermediate",
+    prompt:`You are a senior digital advertising industry commentator in Australia. Write a 500-word thought leadership article for publication on iabaustralia.com.au on the following topic:\n\n"The state of addressable advertising in Australia as third-party cookies fade out"\n\nInclude: current landscape, what marketers are doing now, what IAB Australia recommends, and a forward-looking close. Tone: authoritative, practical, non-alarmist.`,
+    tip:"Enable web search first for the most current data and references." },
+
+  { role:"marketing", title:"Event Promotion Copy", category:"Content", difficulty:"Beginner",
+    prompt:`Write promotional copy for an IAB Australia event: [Event name and brief description].\n\nI need:\n• A 40-word teaser (for social or email subject)\n• A 100-word event description (for the website)\n• A 250-word full promotional blurb (for email or event listings)\n• Three SMS-friendly one-liners (under 160 characters each)\n\nAudience: senior marketing and media professionals in Australia.`,
+    tip:"Paste in the event brief — the more context you give, the better the copy." },
+
+  { role:"marketing", title:"Campaign Brief", category:"Planning", difficulty:"Intermediate",
+    prompt:`Write a campaign brief for IAB Australia's [Campaign name, e.g. 'Membership Acquisition 2025']. Include:\n• Campaign objective (1 sentence)\n• Target audience (primary and secondary)\n• Key message and value proposition\n• Tone and personality\n• Channel mix recommendation (email, social, events, PR)\n• Content themes and angles\n• KPIs to measure success\n• Timeline overview\n\nMake it practical and actionable, not vague marketing-speak.`,
+    tip:"Share this brief with Claude in future conversations as standing context for content creation." },
+
+  // ── MEMBERSHIP ────────────────────────────────────────────────
+  { role:"membership", title:"Cold Outreach Email", category:"Drafting", difficulty:"Beginner",
+    prompt:`Write a cold outreach email to the Marketing Director of a large Australian media agency about IAB Australia membership.\n\nMake it:\n• Personalised-feeling (not generic)\n• Under 200 words\n• Focused on the value of industry connections, research, and standards influence\n• Ending with a low-commitment CTA (a 20-minute call)\n\nAvoid: jargon, hard sell, long lists of benefits.`,
+    tip:"Add '[Company name] specifically' in the brief to make it feel more tailored." },
+
+  { role:"membership", title:"Lapsed Member Winback", category:"Drafting", difficulty:"Beginner",
+    prompt:`Write a warm, non-pushy email to a member who didn't renew their IAB Australia membership 3 months ago. We know they attended the Summit last year and engaged with our measurement standards working group.\n\nGoal: re-open the conversation, not close a hard sale. Reference what's new at IAB Australia since they lapsed. Offer a brief call to reconnect.\n\nTone: genuine, personal, peer-to-peer rather than corporate.`,
+    tip:"Ask Claude to 'write a version from the CEO' for high-value lapsed members." },
+
+  { role:"membership", title:"Pre-Meeting Research", category:"Research", difficulty:"Intermediate",
+    prompt:`I have a membership sales meeting next week with [Company name], a [type of company, e.g. 'mid-size independent media agency based in Sydney'].\n\nPlease research them and give me:\n• Company overview (size, clients, positioning)\n• Recent news or campaigns\n• Their likely priorities right now\n• Three reasons IAB Australia membership is specifically relevant to them\n• Two conversation-starting questions I could use to open the meeting\n\nFormat as a one-page briefing note.`,
+    tip:"Enable web search for current news. Best run the day before the meeting." },
+
+  { role:"membership", title:"Objection Handler", category:"Strategy", difficulty:"Intermediate",
+    prompt:`A prospective member said: "We already have plenty of industry connections and we don't have budget for another membership this year."\n\nGive me:\n1. A concise, confident response I can say in the moment (2–3 sentences)\n2. A follow-up email version if I need to respond in writing\n3. Two questions I could ask to explore whether budget is the real objection or a proxy for something else\n\nTone: calm, consultative, not defensive.`,
+    tip:"Swap out the objection for whatever you're actually hearing — this works for any pushback." },
+
+  { role:"membership", title:"Renewal Proposal", category:"Drafting", difficulty:"Intermediate",
+    prompt:`Write a one-page membership renewal proposal for a current IAB Australia member: [Member company name, membership tier, how long they've been a member].\n\nInclude:\n• Personalised opening that references their involvement (working groups, events attended)\n• Summary of the value they've received\n• What's new for the coming year\n• Their renewal options and pricing\n• A clear, easy next step\n\nTone: warm and appreciative, not transactional.`,
+    tip:"Paste in their Attio CRM notes first so Claude can reference their actual history." },
+
+  { role:"membership", title:"Pipeline Summary", category:"Analysis", difficulty:"Intermediate",
+    prompt:`Here is my membership pipeline data for this quarter. Please:\n1. Summarise overall pipeline health in 3 sentences\n2. Identify the top 3 deals to prioritise and why\n3. Flag any deals that look stale (no activity in 2+ weeks)\n4. Recommend specific next actions for each flagged deal\n5. Forecast expected revenue if deals close at 60%, 75%, and 90% conversion\n\n[Paste pipeline data from Attio here]`,
+    tip:"Export Attio data as CSV or copy/paste deal notes — Claude handles both." },
+
+  // ── CEO ───────────────────────────────────────────────────────
+  { role:"ceo", title:"Monday Morning Briefing", category:"Research", difficulty:"Beginner",
+    prompt:`Give me a concise Monday morning briefing on the Australian digital advertising industry. Cover:\n• Top 3 news items from the past week\n• Any regulatory or policy developments\n• What our members are likely talking about right now\n• One global trend that's about to hit the Australian market\n\nFormat: short headlines with 2-sentence summaries. Total length: one page max.`,
+    tip:"Enable Deep Research mode — it will pull from multiple current sources automatically." },
+
+  { role:"ceo", title:"Board Report Draft", category:"Drafting", difficulty:"Intermediate",
+    prompt:`Draft the CEO section of our Board report for [Month/Quarter]. Key points to cover:\n• Membership: [current numbers, growth vs target]\n• Events: [Summit update, recent events]\n• Advocacy: [key positions we've taken, submissions made]\n• Industry landscape: [what's notable right now]\n• Looking ahead: priorities for next quarter\n\nTone: confident, transparent, forward-looking. Length: 1.5–2 pages. Write for a Board that is engaged but time-poor.`,
+    tip:"Paste in rough notes or bullet points and Claude will shape them into polished prose." },
+
+  { role:"ceo", title:"Op-Ed / Thought Leadership", category:"Content", difficulty:"Intermediate",
+    prompt:`Write a 600-word op-ed for publication in B&T or the AFR under my byline as CEO of IAB Australia.\n\nTopic: [Your chosen topic, e.g. 'Why Australia needs stronger digital advertising standards as AI-generated content scales']\n\nTone: authoritative, direct, opinion-led — not a corporate press release. Take a clear position. Use one or two specific examples or data points. End with a call to action for the industry.\n\nWrite in first person.`,
+    tip:"Try 'Write a provocative version that challenges a common industry assumption' for a bolder take." },
+
+  { role:"ceo", title:"Devil's Advocate", category:"Strategy", difficulty:"Advanced",
+    prompt:`I'm weighing a strategic decision: [Describe the decision or direction you're leaning toward].\n\nMy current thinking is: [Summarise your position].\n\nPlease:\n1. Play devil's advocate — give me the strongest possible case against my position\n2. Identify the 3 assumptions I'm making that could be wrong\n3. Suggest one alternative approach I may not have considered\n4. Tell me what additional information would change your view\n\nBe direct. I don't need validation — I need sharp thinking.`,
+    tip:"One of Claude's most underused capabilities. Use it before any major decision." },
+
+  { role:"ceo", title:"Stakeholder Meeting Prep", category:"Planning", difficulty:"Intermediate",
+    prompt:`I have a meeting next week with [Name/role, e.g. 'the ACCC Chair' or 'the CEO of News Corp Australia']. Brief me:\n\n1. Background on this person and their organisation's current priorities\n2. Their likely perspective on IAB Australia and digital advertising regulation\n3. Three conversation angles that advance IAB Australia's interests\n4. Any potential sensitivities I should navigate carefully\n5. A suggested agenda for a 45-minute meeting\n\nI want to walk in prepared and well-positioned.`,
+    tip:"Enable web search for current context on the individual and their recent public statements." },
+
+  { role:"ceo", title:"Media Statement", category:"Drafting", difficulty:"Intermediate",
+    prompt:`Draft a media statement from IAB Australia in response to: [Describe the news or policy development].\n\nOur position is: [Summarise IAB Australia's stance]\n\nInclude:\n• A strong opening that states our position clearly\n• 1–2 supporting points or data references\n• A quote attributable to me as CEO (authoritative, not defensive)\n• A closing statement on what we'd like to see happen\n\nLength: 250–350 words. Tone: measured, constructive, industry-leading.`,
+    tip:"Ask Claude to write a 'cautious version' and a 'bolder version' to compare." },
+
+  // ── FINANCE ───────────────────────────────────────────────────
+  { role:"finance", title:"Variance Commentary", category:"Analysis", difficulty:"Beginner",
+    prompt:`Here is our P&L for [period] vs budget:\n\n[Paste your data here]\n\nWrite a variance commentary suitable for a board finance pack. It should:\n• Open with an overall 1-sentence assessment\n• Explain the top 3 positive and negative variances in plain English\n• Note any one-off items that distort the picture\n• Close with an outlook comment\n\nLength: 200–250 words. No jargon — the board includes non-finance members.`,
+    tip:"Paste the raw numbers in any format — Claude will interpret them and write the narrative." },
+
+  { role:"finance", title:"Excel Formula Help", category:"Analysis", difficulty:"Beginner",
+    prompt:`Write an Excel formula that does the following: [Describe what you need in plain English].\n\nMy spreadsheet has:\n• [Describe the column structure, e.g. 'Column A = Month, Column B = Revenue, Column C = Costs']\n• Data starts from row 2\n• [Any other relevant details]\n\nPlease give me:\n1. The formula itself\n2. A plain English explanation of what it does\n3. Any edge cases or errors to watch for`,
+    tip:"You can paste a screenshot of your spreadsheet and describe what you want — Claude will work it out." },
+
+  { role:"finance", title:"Results Narrative", category:"Drafting", difficulty:"Beginner",
+    prompt:`I'm presenting our [Q1/Q2/Q3/Q4] budget vs actual results to the leadership team. Here are the key figures:\n\n[Paste or describe your numbers]\n\nWrite a 300-word spoken narrative I can use to walk through the results. Structure:\n• How we performed overall\n• What drove the key variances\n• What we're watching for next quarter\n• Any decisions needed from the leadership team\n\nAssume the audience is senior but not finance specialists.`,
+    tip:"Ask Claude to 'turn this into presentation slide dot points' afterwards for your deck." },
+
+  { role:"finance", title:"Contract Summary", category:"Analysis", difficulty:"Intermediate",
+    prompt:`Review the following supplier contract and give me a plain English summary covering:\n1. What we're paying and when\n2. What we're getting in return\n3. Contract term and renewal/exit conditions\n4. Any penalty clauses or risk areas I should flag\n5. Anything unusual compared to standard commercial terms\n\nNote: flag anything that needs legal review.\n\n[Paste contract text here]`,
+    tip:"Always confirm legal and compliance matters with a qualified advisor — Claude is your first-pass reader." },
+
+  { role:"finance", title:"Revenue Forecast Model", category:"Strategy", difficulty:"Advanced",
+    prompt:`Help me build a membership revenue forecast model for IAB Australia. We have:\n• [Number] current members across [X] tiers with different annual fees\n• Historical renewal rates of approximately [X]%\n• A target of [X] new members this year\n\nPlease:\n1. Describe the model structure I should build in Excel\n2. List the key assumptions and where to build sensitivity toggles\n3. Suggest the most important scenarios to model (base / upside / downside)\n4. Give me the Excel formulas for the core revenue calculation row`,
+    tip:"Once you have the structure, ask Claude to 'write the assumptions narrative for the CFO cover page.'" },
+
+  { role:"finance", title:"Finance Process SOP", category:"Drafting", difficulty:"Intermediate",
+    prompt:`Create a Standard Operating Procedure for our [process name, e.g. 'monthly accounts close' or 'expense reimbursement process'].\n\nHere's how it currently works: [Describe in plain language]\n\nFormat the SOP with:\n• Purpose\n• Who this applies to\n• Step-by-step numbered process\n• Key deadlines or timeframes\n• What to do if something goes wrong\n• Document owner and review date\n\nMake it clear enough that someone new to the role could follow it independently.`,
+    tip:"Great for knowledge transfer and audit readiness — document your processes while they're fresh." },
+
+  // ── DESIGNER ──────────────────────────────────────────────────
+  { role:"designer", title:"Creative Brief", category:"Planning", difficulty:"Beginner",
+    prompt:`Write a creative brief for the following project: [Describe the project, e.g. 'IAB Australia Summit 2025 campaign']\n\nInclude:\n• Project objective (one sentence)\n• Target audience\n• Key message\n• Tone and personality\n• Visual direction (mood, style, references)\n• Deliverables list\n• Mandatory inclusions (logo, URL, dates, etc.)\n• Restrictions or things to avoid\n• Timeline and sign-off process\n\nMake it clear enough that a freelancer with no prior context could brief themselves from this document.`,
+    tip:"Use this to align with stakeholders before you start — it prevents late-stage scope changes." },
+
+  { role:"designer", title:"Headline Options", category:"Content", difficulty:"Beginner",
+    prompt:`Generate 10 headline options for [describe the design: e.g. 'the IAB Australia Annual Report cover', 'a Summit banner', 'a membership campaign'].\n\nCore message: [Describe what you want people to feel or do]\n\nPlease give me a mix of:\n• Bold and declarative\n• Question-based\n• Data-led or specific\n• Emotive or aspirational\n• Short and punchy (under 6 words)\n\nThen mark your top 3 picks with a brief reason why.`,
+    tip:"Ask Claude to 'now write 5 sub-headlines to pair with your top 3' to build out your options." },
+
+  { role:"designer", title:"Slide Deck Copy", category:"Drafting", difficulty:"Intermediate",
+    prompt:`I'm designing a presentation for IAB Australia on [Topic]. Here's my slide structure:\n\n[List your slide titles or rough content plan]\n\nFor each slide, please write:\n• A concise headline (max 8 words)\n• 3 dot points or one short paragraph of body copy\n• Speaker notes of 2–3 sentences the presenter can use\n\nKeep language clear and punchy — this is for a room of senior industry professionals.`,
+    tip:"Claude in PowerPoint (beta) can push this content directly into your deck structure." },
+
+  { role:"designer", title:"Alt Text Writer", category:"Content", difficulty:"Beginner",
+    prompt:`Write alt text for the following images. For each, provide:\n• A descriptive alt text (for accessibility/screen readers) — max 125 characters\n• A longer image description (for social media or internal records) — 1–2 sentences\n\nImages:\n1. [Describe image 1]\n2. [Describe image 2]\n3. [Describe image 3]\n\nKeep alt text objective and descriptive — no marketing language.`,
+    tip:"You can upload the image directly to Claude and ask it to write the alt text automatically." },
+
+  { role:"designer", title:"Feedback Interpreter", category:"Analysis", difficulty:"Intermediate",
+    prompt:`I've received the following feedback on a design from a stakeholder:\n\n"[Paste their feedback]"\n\nHelp me:\n1. Identify what they're actually asking for (the core need behind the words)\n2. Flag any conflicting requests or things that seem purely subjective\n3. Suggest how I could address this feedback practically\n4. Draft a reply that acknowledges their feedback, asks one clarifying question, and sets expectations on what will change\n\nTone for the reply: professional, collaborative, not defensive.`,
+    tip:"Incredibly useful for translating vague stakeholder feedback into actionable design direction." },
+
+  { role:"designer", title:"Visual Concept Description", category:"Drafting", difficulty:"Intermediate",
+    prompt:`I want to create a visual concept for [Project/campaign name]. Help me write a detailed visual direction document I can use to:\n• Brief a photographer or videographer\n• Use as a reference for AI image generation\n• Align with the marketing team on the look and feel\n\nConcept I have in mind: [Describe your rough idea]\n\nFlesh this out into a full visual brief including: mood/atmosphere, colour palette direction, lighting style, composition style, subject matter, what to include, and what to avoid.`,
+    tip:"Use this as your prompt for Adobe Firefly for instant visual exploration and mood-boarding." },
+
+  // ── TECH CONSULTANT ───────────────────────────────────────────
+  { role:"consultant", title:"Industry Landscape Briefing", category:"Research", difficulty:"Intermediate",
+    prompt:`You are an expert in digital advertising technology with deep knowledge of the Australian market.\n\nGive me a comprehensive briefing on the current state of [topic, e.g. 'retail media in Australia']. Cover:\n• Global context and where Australia sits\n• Key players operating in the Australian market\n• Current challenges and debates\n• What IAB Australia's role is or could be\n• Emerging developments to watch in the next 12 months\n\nFormat: executive briefing, 600–800 words. Cite sources where possible.`,
+    tip:"Enable Deep Research mode — it will pull from multiple current sources for a more comprehensive output." },
+
+  { role:"consultant", title:"Technical Explainer", category:"Content", difficulty:"Intermediate",
+    prompt:`Write a plain English explainer on [Technical topic, e.g. 'Supply Path Optimisation', 'Clean Room technology', 'the Privacy Sandbox']. This is for a newsletter aimed at senior marketing professionals who are not technical specialists.\n\nStructure:\n• What is it? (2 sentences)\n• Why does it matter? (The business problem it solves)\n• How does it work? (Plain language, no jargon)\n• What should Australian marketers and publishers be doing about it right now?\n\nLength: 400–500 words. Conversational but credible tone.`,
+    tip:"Follow up with: 'Now write a 60-second spoken version I can use as a podcast intro.'" },
+
+  { role:"consultant", title:"Standards Document Summary", category:"Analysis", difficulty:"Advanced",
+    prompt:`Analyse the following industry standards document or technical specification and give me:\n1. A 3-sentence plain English summary of what this is and who it affects\n2. The 5 most important changes or requirements from an Australian market perspective\n3. What publishers need to do\n4. What advertisers and agencies need to do\n5. Any ambiguities or gaps that IAB Australia should weigh in on\n6. Recommended next steps for our working group\n\n[Paste or upload the document]`,
+    tip:"Upload the full PDF directly — Claude will read it and extract exactly what you need." },
+
+  { role:"consultant", title:"Workshop Agenda", category:"Planning", difficulty:"Intermediate",
+    prompt:`I'm facilitating a 90-minute industry working group session on [topic, e.g. 'addressable TV measurement standards in Australia']. Attendees will be senior representatives from broadcasters, agencies, and measurement vendors.\n\nPlease design:\n• A 90-minute agenda with time allocations\n• 5 discussion questions to stimulate genuine debate\n• An output framework — what we want to have agreed or produced by the end\n• A 'parking lot' process for off-topic issues\n• Tips for keeping the session focused given competing stakeholder interests`,
+    tip:"Ask Claude to 'write a pre-read document participants can review before the session' as a follow-up." },
+
+  { role:"consultant", title:"Position Paper Outline", category:"Strategy", difficulty:"Advanced",
+    prompt:`Help me structure an IAB Australia position paper on [topic, e.g. 'the regulation of AI-generated advertising content in Australia'].\n\nOur current position is: [Briefly describe where IAB Australia stands]\n\nPlease produce:\n• A detailed outline with all major sections and sub-sections\n• Key arguments to make in each section\n• Data points, precedents or case studies I should research to support each argument\n• Potential counterarguments and how to address them\n• An executive summary structure (problem, position, call to action)\n\nThis will be shared with government and key industry stakeholders.`,
+    tip:"Use the outline to have Claude draft each section one by one in separate conversations." },
+
+  { role:"consultant", title:"Global vs Australia Comparison", category:"Research", difficulty:"Advanced",
+    prompt:`Compare how IAB chapters in the US, UK, and Europe are approaching [specific topic, e.g. 'measurement standardisation for retail media'] versus the current state in Australia.\n\nFor each market, cover:\n• Current initiatives or standards in play\n• Key industry bodies involved beyond IAB\n• Adoption challenges specific to that market\n• Timeline and maturity level\n\nThen: identify the top 3 lessons Australia should consider adopting, and any approaches to avoid given our market structure.\n\nFormat as a comparative briefing, 600–900 words.`,
+    tip:"Ideal for preparing a presentation to the IAB Australia board or a government submission." },
+];
+
+// ── State ──────────────────────────────────────────────────────
+let activeRole = "all";
+let activeCat  = "All";
+let activeDiff = "All";
+let openCard   = null;
+
+// ── Build role pills ───────────────────────────────────────────
+const pillsEl = document.getElementById("rolePills");
+ROLES.forEach(r => {
+  const count = r.id === "all" ? PROMPTS.length : PROMPTS.filter(p => p.role === r.id).length;
+  const btn = document.createElement("button");
+  btn.className = "pill" + (r.id === activeRole ? " active" : "");
+  btn.innerHTML = `${r.label} <span class="count">(${count})</span>`;
+  if (r.id === activeRole) btn.style.background = r.color;
+  btn.addEventListener("click", () => { activeRole = r.id; render(); });
+  btn.dataset.roleId = r.id;
+  pillsEl.appendChild(btn);
+});
+
+// ── Build category filters ─────────────────────────────────────
+const catEl = document.getElementById("catFilters");
+CATEGORIES.forEach(c => {
+  const btn = document.createElement("button");
+  btn.className = "filter-btn" + (c === activeCat ? " active-cat" : "");
+  btn.textContent = c;
+  btn.addEventListener("click", () => { activeCat = c; render(); });
+  btn.dataset.cat = c;
+  catEl.appendChild(btn);
+});
+
+// ── Build difficulty filters ───────────────────────────────────
+const diffEl = document.getElementById("diffFilters");
+DIFFICULTIES.forEach(d => {
+  const btn = document.createElement("button");
+  btn.className = "filter-btn" + (d === activeDiff ? " active-diff" : "");
+  btn.textContent = d;
+  btn.addEventListener("click", () => { activeDiff = d; render(); });
+  btn.dataset.diff = d;
+  diffEl.appendChild(btn);
+});
+
+// ── Render ─────────────────────────────────────────────────────
+function render() {
+  const search = document.getElementById("searchBox").value.toLowerCase();
+
+  // Update pill styles
+  document.querySelectorAll(".pill").forEach(btn => {
+    const r = ROLES.find(x => x.id === btn.dataset.roleId);
+    btn.classList.toggle("active", btn.dataset.roleId === activeRole);
+    btn.style.background = btn.dataset.roleId === activeRole ? r.color : "";
+    btn.style.color = btn.dataset.roleId === activeRole ? "white" : "";
+  });
+
+  // Update cat filter styles
+  document.querySelectorAll("[data-cat]").forEach(btn => {
+    btn.classList.toggle("active-cat", btn.dataset.cat === activeCat);
+  });
+
+  // Update diff filter styles
+  document.querySelectorAll("[data-diff]").forEach(btn => {
+    btn.classList.toggle("active-diff", btn.dataset.diff === activeDiff);
+  });
+
+  // Filter prompts
+  const filtered = PROMPTS.filter(p => {
+    const rOk = activeRole === "all" || p.role === activeRole;
+    const cOk = activeCat === "All" || p.category === activeCat;
+    const dOk = activeDiff === "All" || p.difficulty === activeDiff;
+    const sOk = !search || p.title.toLowerCase().includes(search) || p.prompt.toLowerCase().includes(search);
+    return rOk && cOk && dOk && sOk;
+  });
+
+  document.getElementById("resultsCount").textContent =
+    `Showing ${filtered.length} prompt${filtered.length !== 1 ? "s" : ""}${search ? ` matching "${document.getElementById("searchBox").value}"` : ""}`;
+
+  const cardsEl = document.getElementById("cards");
+  const emptyEl = document.getElementById("empty");
+
+  if (filtered.length === 0) {
+    cardsEl.innerHTML = "";
+    emptyEl.style.display = "block";
+    return;
+  }
+  emptyEl.style.display = "none";
+
+  cardsEl.innerHTML = filtered.map((p, i) => {
+    const r = ROLES.find(x => x.id === p.role);
+    const isOpen = openCard === `${p.role}-${p.title}`;
+    return `
+      <div class="card${isOpen ? " open" : ""}" style="${isOpen ? `border-color:${r.color}` : ""}"
+           data-key="${p.role}-${p.title}">
+        <div class="card-header" onclick="toggleCard('${p.role}-${p.title}','${r.color}',this)">
+          <div class="card-accent" style="background:${r.color}"></div>
+          <div class="card-meta">
+            <div class="card-title-row">
+              <span class="card-title">${p.title}</span>
+              <span class="tag">${p.category}</span>
+              <span class="diff-tag diff-${p.difficulty}">${p.difficulty}</span>
+            </div>
+            <div class="card-role" style="color:${r.color}">${r.label}</div>
+          </div>
+          <div class="card-chevron">▼</div>
+        </div>
+        <div class="card-body">
+          <div class="prompt-box">${escHtml(p.prompt)}</div>
+          ${p.tip ? `<div class="tip-box"><span class="tip-icon">💡</span><span class="tip-text"><strong>Pro tip:</strong> ${escHtml(p.tip)}</span></div>` : ""}
+          <div class="card-actions">
+            <button class="btn-copy" style="background:${r.color}"
+              onclick="copyPrompt(this, ${JSON.stringify(p.prompt)})">📋 Copy Prompt</button>
+            <a class="btn-open" href="https://claude.ai" target="_blank" rel="noopener"
+              style="border:1.5px solid ${r.color}; color:${r.color}">Open Claude →</a>
+          </div>
+        </div>
+      </div>`;
+  }).join("");
+}
+
+function escHtml(s) {
+  return s.replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;");
+}
+
+function toggleCard(key, color, headerEl) {
+  const card = headerEl.closest(".card");
+  const isOpen = card.classList.contains("open");
+  openCard = isOpen ? null : key;
+  card.classList.toggle("open");
+  card.style.borderColor = isOpen ? "transparent" : color;
+}
+
+function copyPrompt(btn, text) {
+  navigator.clipboard.writeText(text).catch(() => {
+    const ta = document.createElement("textarea");
+    ta.value = text; ta.style.position = "fixed"; ta.style.opacity = "0";
+    document.body.appendChild(ta); ta.select();
+    document.execCommand("copy"); document.body.removeChild(ta);
+  });
+  const orig = btn.textContent;
+  btn.textContent = "✓ Copied!";
+  btn.style.background = "#16a34a";
+  setTimeout(() => { btn.textContent = orig; btn.style.background = ""; btn.style.removeProperty("background"); }, 2000);
+}
+
+render();
+</script>
+</body>
+</html>
