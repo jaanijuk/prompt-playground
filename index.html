@@ -40,26 +40,41 @@
   .main { max-width: 1000px; margin: 0 auto; padding: 28px 24px 60px; }
 
   /* ── Controls ── */
-  .controls { background: white; border-radius: 14px; padding: 20px 22px; margin-bottom: 20px; box-shadow: 0 2px 8px rgba(0,0,0,0.07); }
+  .controls {
+    background: white; border-radius: 14px; padding: 20px 22px; margin-bottom: 20px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.07);
+    position: sticky; top: 12px; z-index: 50;
+  }
 
-  .role-pills { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px; }
+  .role-pills {
+    display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 16px;
+  }
   .pill {
     padding: 7px 14px; border-radius: 20px; border: none; cursor: pointer;
     font-size: 13px; font-weight: 500; background: #f1f5f9; color: #475569;
     transition: all 0.15s; white-space: nowrap;
+    font-family: inherit;
   }
   .pill:hover { opacity: 0.85; }
   .pill.active { color: white; font-weight: 700; }
   .pill .count { opacity: 0.7; font-size: 11px; }
 
   .filter-row { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+  .search-wrap { position: relative; flex: 1 1 220px; min-width: 180px; }
   .search-box {
-    flex: 1 1 200px; min-width: 160px; padding: 8px 14px;
+    width: 100%; padding: 8px 14px 8px 14px; padding-right: 56px;
     border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 13px;
     outline: none; font-family: inherit; color: #374151;
     transition: border-color 0.15s;
   }
   .search-box:focus { border-color: #00857C; }
+  .kbd-hint {
+    position: absolute; right: 8px; top: 50%; transform: translateY(-50%);
+    font-size: 10px; color: #94a3b8; background: #f1f5f9;
+    padding: 2px 6px; border-radius: 4px; font-family: ui-monospace, 'SF Mono', monospace;
+    pointer-events: none; border: 1px solid #e2e8f0;
+  }
+  .search-box:focus + .kbd-hint { opacity: 0; }
 
   .filter-group { display: flex; gap: 6px; flex-wrap: wrap; }
   .filter-btn {
@@ -143,6 +158,16 @@
   .empty h3 { font-size: 16px; font-weight: 600; color: #6b7280; margin-bottom: 4px; }
   .empty p { font-size: 13px; }
 
+  /* ── Toast ── */
+  .toast {
+    position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px);
+    background: #1B2A4A; color: white; padding: 10px 20px; border-radius: 8px;
+    font-size: 13px; font-weight: 600;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.2);
+    opacity: 0; pointer-events: none; transition: all 0.25s; z-index: 100;
+  }
+  .toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
   /* ── Footer ── */
   .footer {
     text-align: center; padding: 24px; font-size: 12px; color: #9ca3af;
@@ -152,8 +177,9 @@
   @media (max-width: 600px) {
     .header { padding: 24px 20px; }
     .main { padding: 20px 16px 40px; }
-    .controls { padding: 16px; }
+    .controls { padding: 16px; position: relative; top: 0; }
     .header h1 { font-size: 22px; }
+    .kbd-hint { display: none; }
   }
 </style>
 </head>
@@ -166,9 +192,9 @@
     <h1>⚡ Prompt Playground ⚡(a joint JJ & Claude production 🤓)</h1>
     <p>Some suggested ready-to-use prompts for every role. Just copy, customise, and paste into Claude!</p>
     <div class="header-meta">
-      <div class="header-stat"><strong>42</strong> Prompts</div>
-      <div class="header-stat"><strong>7</strong> Roles</div>
-      <div class="header-stat"><strong>6</strong> Categories</div>
+      <div class="header-stat"><strong id="statPrompts">0</strong> Prompts</div>
+      <div class="header-stat"><strong id="statRoles">0</strong> Roles</div>
+      <div class="header-stat"><strong id="statCategories">0</strong> Categories</div>
     </div>
   </div>
 </div>
@@ -178,7 +204,10 @@
   <div class="controls">
     <div class="role-pills" id="rolePills"></div>
     <div class="filter-row">
-      <input class="search-box" id="searchBox" type="text" placeholder="🔍  Search prompts..." oninput="render()">
+      <div class="search-wrap">
+        <input class="search-box" id="searchBox" type="text" placeholder="🔍  Search prompts..." oninput="render()">
+        <span class="kbd-hint" id="kbdHint">⌘K</span>
+      </div>
       <div class="filter-group" id="catFilters"></div>
       <div class="filter-group" id="diffFilters"></div>
     </div>
@@ -195,6 +224,8 @@
 
 <div class="footer">IAB Australia · Claude Team Onboarding · iabaustralia.com.au</div>
 
+<div class="toast" id="toast">✓ Copied to clipboard</div>
+
 <script>
 const ROLES = [
   { id:"all",        label:"⚡ All Roles",              color:"#1B2A4A" },
@@ -202,6 +233,7 @@ const ROLES = [
   { id:"marketing",  label:"📣 Marketing",               color:"#00857C" },
   { id:"membership", label:"🤝 Membership",              color:"#8B5CF6" },
   { id:"ceo",        label:"👔 CEO",                     color:"#B45309" },
+  { id:"policy",     label:"⚖️ Policy & Regulatory",     color:"#4338CA" },
   { id:"finance",    label:"💰 Finance",                 color:"#1D7A3A" },
   { id:"designer",   label:"🎨 Designer",                color:"#C2410C" },
   { id:"consultant", label:"📡 Tech Consultant",         color:"#0E7490" },
@@ -311,6 +343,31 @@ const PROMPTS = [
     prompt:`Draft a media statement from IAB Australia in response to: [Describe the news or policy development].\n\nOur position is: [Summarise IAB Australia's stance]\n\nInclude:\n• A strong opening that states our position clearly\n• 1–2 supporting points or data references\n• A quote attributable to me as CEO (authoritative, not defensive)\n• A closing statement on what we'd like to see happen\n\nLength: 250–350 words. Tone: measured, constructive, industry-leading.`,
     tip:"Ask Claude to write a 'cautious version' and a 'bolder version' to compare." },
 
+  // ── POLICY & REGULATORY AFFAIRS ───────────────────────────────
+  { role:"policy", title:"Regulatory Submission Draft", category:"Drafting", difficulty:"Advanced",
+    prompt:`Draft an IAB Australia submission to [regulator or consultation, e.g. 'the Attorney-General's Department Privacy Act Review consultation paper'].\n\nOur position is: [Brief outline of where IAB Australia stands on the key issues]\n\nStructure the submission with:\n• Executive summary (½ page) with our 5 key recommendations\n• About IAB Australia and our standing to comment\n• Response to each consultation question (use the question as a heading)\n• Cross-cutting concerns the consultation doesn't directly ask about\n• Conclusion and clear list of recommendations\n\nTone: constructive, evidence-based, industry-leading. Length: 8–12 pages. We want to be seen as a serious, expert voice — not defensive or self-interested. Cite Australian and international precedent where relevant.`,
+    tip:"After the draft, ask: 'Now extract the executive summary as a standalone one-pager for media and member distribution.'" },
+
+  { role:"policy", title:"Policy Horizon Scan", category:"Research", difficulty:"Intermediate",
+    prompt:`Give me a horizon scan of policy and regulatory developments affecting digital advertising in Australia over the past [week / fortnight / month]. Cover:\n• Australian federal and state legislation in motion\n• Regulator announcements (OAIC, ACMA, ACCC, eSafety, AANA)\n• Open consultations and submission deadlines\n• Relevant court decisions or enforcement actions\n• International developments likely to flow through to Australia (EU, UK, US, Singapore)\n• Industry self-regulatory developments\n\nFormat: grouped headlines with 2–3 sentence summaries. Flag anything that needs an IAB Australia response, with suggested urgency (this week / this month / watching brief).`,
+    tip:"Enable Deep Research for a comprehensive scan. Run weekly to build a regulatory rhythm — and a strong evidence base." },
+
+  { role:"policy", title:"Privacy Reform Impact Analysis", category:"Analysis", difficulty:"Advanced",
+    prompt:`Analyse the practical implications of [specific reform, e.g. 'the proposed Privacy Act amendments introducing a fair and reasonable test for personal information handling, and the proposed direct right of action'] for IAB Australia members.\n\nCover:\n• Plain-English summary of what's being proposed\n• Practical implications — broken out separately for publishers, advertisers, ad-tech vendors, agencies, and measurement providers\n• Operational changes members would need to make and likely timeframes\n• Commercial impact on programmatic, retargeting, audience-based buying, and measurement\n• Where the reform creates ambiguity that needs clarification\n• Specific positions IAB Australia should advocate for, against, or seek clarification on\n• How this aligns or conflicts with comparable GDPR and UK regimes\n\nTone: practical and operationally grounded, not theoretical.`,
+    tip:"Upload the actual consultation paper or exposure draft and Claude will work from the source document — far more accurate than working from summaries." },
+
+  { role:"policy", title:"Stakeholder Briefing Note", category:"Drafting", difficulty:"Intermediate",
+    prompt:`Prepare a one-page briefing note for [stakeholder, e.g. 'a meeting with a senior advisor at the Attorney-General's Department'] on [policy topic].\n\nInclude:\n• Issue summary in 2 sentences\n• Why this matters specifically to digital advertising in Australia (with one or two data points)\n• IAB Australia's current position\n• The 3 takeaways I want them to leave with\n• Anticipated questions and confident, concise answers\n• A clear ask — what we want them to do, consider, or commit to\n\nTone: confident, non-confrontational, evidence-led. No industry jargon — this person is senior but not an ad-tech specialist.`,
+    tip:"Follow up with: 'Now write a 30-second verbal version I can use to open the meeting.'" },
+
+  { role:"policy", title:"Member Consultation Synthesis", category:"Analysis", difficulty:"Intermediate",
+    prompt:`I've gathered member feedback on [policy issue, e.g. 'the proposed children's privacy code']. Please synthesise the input into:\n\n1. Areas of strong consensus (and how strong the agreement is)\n2. Areas of divergent views — explain what's driving the disagreement (e.g. publisher vs ad-tech vs agency perspectives)\n3. The risks and opportunities members are most concerned about\n4. Minority views worth surfacing even if not consensus\n5. A recommended IAB Australia position based on the input\n6. Sensitivities to manage when we publish the position\n\n[Paste consolidated member feedback here — survey responses, working group notes, emails, Slack threads. Messy input is fine.]`,
+    tip:"Works with raw, unstructured input. Useful for turning a noisy working group conversation into a clear board paper." },
+
+  { role:"policy", title:"Inquiry Appearance Prep", category:"Strategy", difficulty:"Advanced",
+    prompt:`I'm appearing before [committee or inquiry, e.g. 'the Senate Standing Committee on Legal and Constitutional Affairs inquiry into Privacy Act reform'].\n\nOur key messages are:\n• [Message 1]\n• [Message 2]\n• [Message 3]\n\nPlease prepare:\n• A 3-minute opening statement\n• The 10 hardest questions I should expect, with confident answers (under 60 seconds spoken each)\n• Data points and evidence I should have at my fingertips\n• Topics or framings to actively avoid\n• How to bridge from hostile questions back to our key messages\n• Names, precedents, and overseas examples I can cite to strengthen credibility\n\nBe sharp. Assume the committee is well-prepared and skeptical.`,
+    tip:"After this, use the CEO 'Devil's Advocate' prompt to stress-test your answers before the appearance." },
+
   // ── FINANCE ───────────────────────────────────────────────────
   { role:"finance", title:"Variance Commentary", category:"Analysis", difficulty:"Beginner",
     prompt:`Here is our P&L for [period] vs budget:\n\n[Paste your data here]\n\nWrite a variance commentary suitable for a board finance pack. It should:\n• Open with an overall 1-sentence assessment\n• Explain the top 3 positive and negative variances in plain English\n• Note any one-off items that distort the picture\n• Close with an outlook comment\n\nLength: 200–250 words. No jargon — the board includes non-finance members.`,
@@ -392,6 +449,15 @@ let activeRole = "all";
 let activeCat  = "All";
 let activeDiff = "All";
 let openCard   = null;
+
+// ── Auto-compute header stats ──────────────────────────────────
+document.getElementById("statPrompts").textContent = PROMPTS.length;
+document.getElementById("statRoles").textContent = ROLES.length - 1; // exclude "All"
+document.getElementById("statCategories").textContent = CATEGORIES.length - 1; // exclude "All"
+
+// ── Detect Mac for keyboard shortcut hint ──────────────────────
+const isMac = navigator.platform.toUpperCase().indexOf("MAC") >= 0;
+document.getElementById("kbdHint").textContent = isMac ? "⌘K" : "Ctrl+K";
 
 // ── Build role pills ───────────────────────────────────────────
 const pillsEl = document.getElementById("rolePills");
@@ -475,6 +541,7 @@ function render() {
   cardsEl.innerHTML = filtered.map((p, i) => {
     const r = ROLES.find(x => x.id === p.role);
     const isOpen = openCard === `${p.role}-${p.title}`;
+    const claudeUrl = `https://claude.ai/new?q=${encodeURIComponent(p.prompt)}`;
     return `
       <div class="card${isOpen ? " open" : ""}" style="${isOpen ? `border-color:${r.color}` : ""}"
            data-key="${p.role}-${p.title}">
@@ -495,9 +562,9 @@ function render() {
           ${p.tip ? `<div class="tip-box"><span class="tip-icon">💡</span><span class="tip-text"><strong>Pro tip:</strong> ${escHtml(p.tip)}</span></div>` : ""}
           <div class="card-actions">
             <button class="btn-copy" style="background:${r.color}"
-              onclick="copyPrompt(this, ${JSON.stringify(p.prompt)})">📋 Copy Prompt</button>
-            <a class="btn-open" href="https://claude.ai" target="_blank" rel="noopener"
-              style="border:1.5px solid ${r.color}; color:${r.color}">Open Claude →</a>
+              onclick='copyPrompt(this, ${JSON.stringify(p.prompt)})'>📋 Copy Prompt</button>
+            <a class="btn-open" href="${claudeUrl}" target="_blank" rel="noopener"
+              style="border:1.5px solid ${r.color}; color:${r.color}">Open in Claude →</a>
           </div>
         </div>
       </div>`;
@@ -523,11 +590,41 @@ function copyPrompt(btn, text) {
     document.body.appendChild(ta); ta.select();
     document.execCommand("copy"); document.body.removeChild(ta);
   });
+  showToast("✓ Prompt copied — paste into Claude");
   const orig = btn.textContent;
   btn.textContent = "✓ Copied!";
   btn.style.background = "#16a34a";
   setTimeout(() => { btn.textContent = orig; btn.style.background = ""; btn.style.removeProperty("background"); }, 2000);
 }
+
+function showToast(msg) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.classList.add("show");
+  clearTimeout(showToast._t);
+  showToast._t = setTimeout(() => t.classList.remove("show"), 2200);
+}
+
+// ── Keyboard shortcuts ─────────────────────────────────────────
+document.addEventListener("keydown", (e) => {
+  // Cmd/Ctrl + K → focus search
+  if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
+    e.preventDefault();
+    document.getElementById("searchBox").focus();
+    document.getElementById("searchBox").select();
+  }
+  // Escape → close open card or clear search
+  if (e.key === "Escape") {
+    if (openCard) {
+      openCard = null;
+      render();
+    } else if (document.activeElement === document.getElementById("searchBox")) {
+      document.getElementById("searchBox").value = "";
+      render();
+      document.getElementById("searchBox").blur();
+    }
+  }
+});
 
 render();
 </script>
