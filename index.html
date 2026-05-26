@@ -152,6 +152,30 @@
   }
   .btn-open:hover { background: #f8fafc; }
 
+  /* ── Designer guide banner ── */
+  .designer-banner {
+    background: linear-gradient(135deg, #FFF7F0 0%, #FFEDDB 100%);
+    border: 1px solid #FCD9B8;
+    border-left: 4px solid #C2410C;
+    border-radius: 10px;
+    padding: 16px 20px;
+    margin-bottom: 16px;
+    display: none;
+    align-items: center;
+    gap: 14px;
+  }
+  .designer-banner.show { display: flex; }
+  .designer-banner-icon { font-size: 24px; flex-shrink: 0; }
+  .designer-banner-text { flex: 1; min-width: 0; }
+  .designer-banner-title { font-weight: 700; font-size: 14px; color: #7C2D12; margin-bottom: 2px; }
+  .designer-banner-sub { font-size: 12px; color: #9A3412; }
+  .designer-banner-btn {
+    padding: 8px 16px; border-radius: 8px; background: #C2410C; color: white;
+    text-decoration: none; font-size: 12px; font-weight: 700;
+    white-space: nowrap; transition: background 0.15s;
+  }
+  .designer-banner-btn:hover { background: #9A3412; }
+
   /* ── Empty state ── */
   .empty { text-align: center; padding: 60px 0; color: #9ca3af; }
   .empty-icon { font-size: 40px; margin-bottom: 12px; }
@@ -214,6 +238,14 @@
   </div>
 
   <div class="results-count" id="resultsCount"></div>
+  <div class="designer-banner" id="designerBanner">
+    <div class="designer-banner-icon">🎨</div>
+    <div class="designer-banner-text">
+      <div class="designer-banner-title">New: A Designer's Welcome to Claude &amp; Adobe</div>
+      <div class="designer-banner-sub">A short intro guide, designed to be read in 8-10 minutes.</div>
+    </div>
+    <a class="designer-banner-btn" href="https://www.iabaustralia.com.au/wp-content/uploads/2026/05/em-welcome-to-ai.pdf" target="_blank" rel="noopener noreferrer">Open guide →</a>
+  </div>
   <div class="cards" id="cards"></div>
   <div class="empty" id="empty" style="display:none">
     <div class="empty-icon">🔍</div>
@@ -418,6 +450,27 @@ const PROMPTS = [
     prompt:`I want to create a visual concept for [Project/campaign name]. Help me write a detailed visual direction document I can use to:\n• Brief a photographer or videographer\n• Use as a reference for AI image generation\n• Align with the marketing team on the look and feel\n\nConcept I have in mind: [Describe your rough idea]\n\nFlesh this out into a full visual brief including: mood/atmosphere, colour palette direction, lighting style, composition style, subject matter, what to include, and what to avoid.`,
     tip:"Use this as your prompt for Adobe Firefly for instant visual exploration and mood-boarding." },
 
+  // ── Designer × Adobe ─────────────────────────────────────────
+  { role:"designer", title:"Firefly Image Prompts", category:"Content", difficulty:"Beginner",
+    prompt:`I want to create a visual of [describe the image in your own words — be as rough as you like].\n\nFor context, this is for: [Project name and purpose, e.g. 'the IAB Australia Summit hero banner']\n\nPlease turn this into 3 detailed Adobe Firefly prompts that explore different visual directions. For each prompt include:\n• Subject and composition (foreground, background, focal point)\n• Art style or visual reference (photographic, illustrative, editorial, etc.)\n• Lighting and mood\n• Colour palette direction\n• Aspect ratio recommendation\n• Negative prompts (what to avoid)\n\nMake the three directions genuinely different — not three variations of the same idea.`,
+    tip:"Paste a rough sketch or reference image into Claude first. The more you describe what you don't want, the better Firefly performs." },
+
+  { role:"designer", title:"Mood Board Quickstart", category:"Planning", difficulty:"Beginner",
+    prompt:`Generate a mood board brief for [project, e.g. 'IAB Australia Summit 2025 visual identity'].\n\nGive me:\n• A one-paragraph creative direction summary\n• 8 coordinated Adobe Firefly prompts that together populate a complete mood board, covering: hero imagery (2), texture and material (2), environmental or contextual (2), abstract or conceptual (2)\n• A starter colour palette with hex codes (5 colours: 1 dominant, 2 supporting, 2 accent)\n• 3 typography pairings to test (display + body for each)\n\nProject context: [Brief description of audience, tone, and any existing brand cues]`,
+    tip:"Run the 8 Firefly prompts in one sitting to build a complete mood board in under an hour." },
+
+  { role:"designer", title:"Long-Form Document Plan", category:"Planning", difficulty:"Intermediate",
+    prompt:`I'm designing a [document type, e.g. 'annual report', 'policy paper', 'event programme'] in InDesign, approximately [page count] pages.\n\nThe content is about: [Brief description of the content, audience, and tone]\n\nHelp me plan the layout architecture before I open InDesign:\n• Grid system recommendation (column structure, gutters, margin treatment)\n• Page architecture (cover, opener, content section pages, dividers, back matter)\n• Typography hierarchy (display, headlines, sub-heads, body, captions, callouts)\n• Master page strategy and what should live on each\n• Visual rhythm — where to place imagery, breakouts, pull-quotes, and whitespace\n• Suggested page count per section based on the content\n\nFormat: a one-page document I can use as my own brief.`,
+    tip:"Use this BEFORE you open InDesign. It saves hours of mid-document restructuring." },
+
+  { role:"designer", title:"Photoshop Retouching Brief", category:"Drafting", difficulty:"Intermediate",
+    prompt:`I have a photograph I need to use for [purpose].\n\nCurrently the photo shows: [Describe what's in the photo]\n\nI need to make these changes: [Describe what you want — backgrounds altered, elements removed or added, expanded composition, mood shift]\n\nPlease write me:\n• A clear Photoshop Generative Fill prompt for each change\n• A Generative Expand brief if I need to extend the canvas (with direction and content guidance)\n• Specific selection guidance (what to mask, what to leave untouched)\n• A suggested order of operations\n• What to watch for during retouching (artifacts, edges, lighting consistency, scale)`,
+    tip:"Upload the original photo to Claude — it can see the image and write more precise prompts than working from your description alone." },
+
+  { role:"designer", title:"Design Critique Partner", category:"Strategy", difficulty:"Intermediate",
+    prompt:`Critique this design as a thoughtful design director would. I want honest, useful feedback — not validation.\n\nBrief: [Paste the original brief or describe what this was meant to achieve]\nAudience: [Who this is for]\nWhat I'm uncertain about: [The specific thing you want a second opinion on]\n\n[Attach the design as an image, or describe it in detail]\n\nPlease give me:\n• 3 things working well and specifically why\n• 3 things to push further and how I might address them\n• One question I haven't asked myself yet\n• A read on whether this feels on-brief or off-brief, and why\n\nBe direct. I'd rather hear it now than from the stakeholder.`,
+    tip:"Upload a JPG or PNG of your design directly. Claude can see and respond to visual work, not just descriptions of it." },
+
   // ── TECH CONSULTANT ───────────────────────────────────────────
   { role:"consultant", title:"Industry Landscape Briefing", category:"Research", difficulty:"Intermediate",
     prompt:`You are an expert in digital advertising technology with deep knowledge of the Australian market.\n\nGive me a comprehensive briefing on the current state of [topic, e.g. 'retail media in Australia']. Cover:\n• Global context and where Australia sits\n• Key players operating in the Australian market\n• Current challenges and debates\n• What IAB Australia's role is or could be\n• Emerging developments to watch in the next 12 months\n\nFormat: executive briefing, 600–800 words. Cite sources where possible.`,
@@ -515,6 +568,9 @@ function render() {
   document.querySelectorAll("[data-diff]").forEach(btn => {
     btn.classList.toggle("active-diff", btn.dataset.diff === activeDiff);
   });
+
+  // Toggle designer guide banner
+  document.getElementById("designerBanner").classList.toggle("show", activeRole === "designer");
 
   // Filter prompts
   const filtered = PROMPTS.filter(p => {
